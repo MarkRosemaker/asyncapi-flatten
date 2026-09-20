@@ -1,0 +1,4 @@
+- **Promotes inline schemas** to `components/schemas`, leaving simple scalars in place — recursively, so a nested object or enum any number of levels deep gets its own name too, not just one directly on a message payload
+- **Promotes inline messages, channel parameters, and correlation IDs** to their respective `components` sections
+- **Generates readable PascalCase names** with automatic collision avoidance, matching the naming convention the rest of this family already uses (a message named `verifyProgress` gives its payload schema the name `VerifyProgress`)
+- **Reports errors with the full JSON path** to the offending field

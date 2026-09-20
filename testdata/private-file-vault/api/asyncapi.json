@@ -1,0 +1,160 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Private File Vault — Verify Progress",
+    "version": "0.2.0",
+    "description": "Verifying a file against a cloud remote reads the whole file over the network before answering, and that synchronous call has been seen cancelled by its caller before it finishes. This channel is the fix: `POST /remotes/{id}/verify` (see api/openapi.json) starts answering `202` with a `job_id`, and everything past that point — progress, and the eventual match/mismatch/unknown — arrives here instead of in the response body.\n\nThe REST call stays authoritative for the job's existence. If the socket never connects, or drops mid-job, the job still ran; there is just nowhere left to hear how it ended. That is an accepted gap for now, not a design goal — see api/openapi.json's own note on why the socket is an accelerator for a progress bar, not a dependency.\n\nScoped to verify alone. `scan` and `ingest` (`POST /drives/{id}/scan`, `POST /drives/{id}/ingest`) have the same problem — both already answer `202` with nothing to poll or listen to — but they process many files, not one, so their progress almost certainly needs a different shape (a per-file list, not a single byte count) rather than a `kind` field bolted onto this message. That decision is deferred to when one of them is actually wired, not guessed at here.\n\nStill open, deliberately not answered here: how Claude Design's mock-based preview (`api/interactions.json`, which records only request/response pairs) is supposed to represent a stream."
+  },
+  "servers": {
+    "local": {
+      "host": "localhost:8082",
+      "protocol": "ws",
+      "pathname": "/api/ws",
+      "description": "Single connection for the whole app. There is one user and no auth (see docs/roadmap.md's auth note), so the server broadcasts every verify job's messages to every open socket rather than scoping a connection to one job; a client filters to the `job_id` it started, client-side. Alongside `/api/...`, matching where the REST surface already lives."
+    }
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "verifyProgress": {
+      "address": "/api/ws",
+      "messages": {
+        "verifyProgress": {
+          "$ref": "#/components/messages/verifyProgress"
+        }
+      },
+      "title": "Verify progress",
+      "description": "Every message here is a `verify.progress` for a job started by `POST /remotes/{id}/verify`. A client tracks the job it cares about by the `job_id` that call's `202` response gave it, and ignores messages for any other id."
+    }
+  },
+  "operations": {
+    "publishVerifyProgress": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/verifyProgress"
+      },
+      "summary": "The server sends one verify.progress per state change of a running verify job.",
+      "description": "Sent zero or more times while `status` is `running`, then exactly once more in a terminal state (`complete` or `failed`). A client that opens the socket after a job has already finished simply never sees that job's terminal message — there is no replay.",
+      "messages": [
+        {
+          "$ref": "#/channels/verifyProgress/messages/verifyProgress"
+        }
+      ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "VerifyProgress": {
+        "description": "One verify job's state as of `emitted_at`. The same shape whether it is still running or has finished, so a client has exactly one message to parse and one field — `status` — to check for \"is this done yet\".",
+        "type": "object",
+        "required": [
+          "job_id",
+          "status",
+          "emitted_at"
+        ],
+        "properties": {
+          "emitted_at": {
+            "description": "When the server sent this message, not when the state it describes changed. Delivery order is not guaranteed across a reconnect; a client discards a message that arrives after a newer one for the same `job_id` rather than trusting arrival order.",
+            "type": "string",
+            "format": "date-time",
+            "examples": [
+              "2026-09-17T14:02:31Z"
+            ]
+          },
+          "error": {
+            "description": "Why the job failed, in a sentence worth showing verbatim. Present only when `status` is `failed`. A plain string, not a code: there is no branch in this UI that reacts differently to one failure reason versus another, only \"show it, offer to retry\".",
+            "type": "string",
+            "examples": [
+              "reading photos/2026/holiday.jpg on OpenDrive: connection reset by peer"
+            ]
+          },
+          "job_id": {
+            "description": "Correlates this message to the `job_id` the triggering `202` response returned. Opaque beyond that — a client matches it, never parses it.",
+            "type": "string",
+            "format": "uuid",
+            "examples": [
+              "b7f2a6b0-2c8e-4b3a-9c1a-8e6a2f4d9c11"
+            ]
+          },
+          "progress": {
+            "description": "Bytes hashed so far. Absent until the file has been stat'd and its size is known — render that as indeterminate, not as `0`.",
+            "type": "integer",
+            "examples": [
+              4194304
+            ]
+          },
+          "result": {
+            "description": "The verification outcome. Present only when `status` is `complete` — the same information `POST /remotes/{id}/verify` returned synchronously before this channel existed (see `Verification` in api/openapi.json).",
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "copies": {
+                "description": "How many other remotes have a copy of this file recorded.",
+                "type": "integer",
+                "examples": [
+                  1
+                ]
+              },
+              "hash": {
+                "description": "SHA-256 of the file as it is on this remote, computed by this job.",
+                "type": "string",
+                "examples": [
+                  "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                ]
+              },
+              "status": {
+                "description": "`match`: hashes agree. `mismatch`: a copy is recorded elsewhere but this remote's bytes disagree with it. `unknown`: no copy is recorded anywhere else, so nothing was compared and the file was never hashed — `hash`/`stored_hash`/`copies` are all absent in that case.",
+                "type": "string",
+                "enum": [
+                  "match",
+                  "mismatch",
+                  "unknown"
+                ],
+                "examples": [
+                  "match"
+                ]
+              },
+              "stored_hash": {
+                "description": "SHA-256 the database has on record for a copy on another remote. Differs from `hash` exactly when `status` is `mismatch`.",
+                "type": "string",
+                "examples": [
+                  "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                ]
+              }
+            }
+          },
+          "status": {
+            "description": "`running` covers the job from the moment the server accepted it, including before `progress`/`total` are known — there is no separate `queued` state, since nothing about this job is enqueued behind other work today. Exactly one of `complete` or `failed` is the last message a job ever sends.",
+            "type": "string",
+            "enum": [
+              "running",
+              "complete",
+              "failed"
+            ],
+            "examples": [
+              "running"
+            ]
+          },
+          "total": {
+            "description": "The file's size in bytes. Absent exactly when `progress` is absent.",
+            "type": "integer",
+            "examples": [
+              10485760
+            ]
+          }
+        }
+      }
+    },
+    "messages": {
+      "verifyProgress": {
+        "payload": {
+          "$ref": "#/components/schemas/VerifyProgress"
+        },
+        "name": "verify.progress",
+        "title": "Verify progress",
+        "summary": "One state change — progress or terminal — of a running verify job."
+      }
+    }
+  }
+}
