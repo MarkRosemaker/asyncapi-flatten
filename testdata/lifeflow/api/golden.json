@@ -80,7 +80,6 @@
             "minimum": 0
           }
         },
-        "additionalProperties": false,
         "examples": [
           {
             "level": "error",

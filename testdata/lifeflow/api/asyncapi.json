@@ -33,7 +33,6 @@
           "contentType": "application/json",
           "payload": {
             "type": "object",
-            "additionalProperties": false,
             "required": ["title"],
             "description": "A single toast.",
             "properties": {
