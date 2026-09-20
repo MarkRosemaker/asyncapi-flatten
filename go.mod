@@ -3,7 +3,7 @@ module github.com/MarkRosemaker/asyncapi-flatten
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/asyncapi v0.0.0-20260920121503-8c59b3254840
+	github.com/MarkRosemaker/asyncapi v0.0.0-20260920161935-230a4ff40c29
 	github.com/MarkRosemaker/errpath v0.0.0-20260920114347-639d98dfaa6b
 	github.com/MarkRosemaker/fsutil v0.0.0-20260920104944-f65465361a09
 	github.com/ettle/strcase v0.2.0
