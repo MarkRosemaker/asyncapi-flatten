@@ -1,0 +1,103 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Lifeflow",
+    "version": "0.0.1",
+    "description": "Server-to-browser notifications for Lifeflow.\n\nThere is no login. The server writes JSON to every open socket; the browser never writes application frames. Use REST for client-to-server traffic."
+  },
+  "defaultContentType": "application/json",
+  "servers": {
+    "local": {
+      "host": "localhost:8083",
+      "protocol": "ws",
+      "pathname": "/api/ws",
+      "description": "Development server. Dial `ws://localhost:8083/api/ws` (use `wss` if the page is HTTPS). Unauthenticated."
+    }
+  },
+  "channels": {
+    "notifications": {
+      "address": "/",
+      "title": "Notifications",
+      "description": "The WebSocket itself. Path is on the server (`/api/ws`); address is `/` because this protocol has no topics.",
+      "bindings": {
+        "ws": {
+          "method": "GET",
+          "bindingVersion": "0.1.0"
+        }
+      },
+      "messages": {
+        "notification": {
+          "name": "notification",
+          "title": "Notification",
+          "summary": "One toast, server to browser.",
+          "contentType": "application/json",
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title"],
+            "description": "A single toast.",
+            "properties": {
+              "level": {
+                "type": "string",
+                "enum": ["info", "success", "error"],
+                "description": "Toast color."
+              },
+              "persistent": {
+                "type": "boolean",
+                "default": false,
+                "description": "If true, stay until the user dismisses the toast."
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Headline. Required."
+              },
+              "message": {
+                "type": "string",
+                "description": "Optional extra line."
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Auto-dismiss after this many milliseconds. Ignored if `persistent`. `0` means the client default."
+              }
+            },
+            "examples": [
+              {
+                "level": "error",
+                "title": "Job failed",
+                "message": "exit 1",
+                "persistent": true
+              },
+              {
+                "level": "success",
+                "title": "Done",
+                "duration": 4000
+              },
+              {
+                "level": "success",
+                "title": "Saved"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "sendNotification": {
+      "action": "send",
+      "title": "Send notification",
+      "summary": "Push a toast to every connected browser.",
+      "description": "Lifeflow broadcasts the payload on all sockets for this channel. Browsers listen; they do not send.",
+      "channel": {
+        "$ref": "#/channels/notifications"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/notifications/messages/notification"
+        }
+      ]
+    }
+  }
+}

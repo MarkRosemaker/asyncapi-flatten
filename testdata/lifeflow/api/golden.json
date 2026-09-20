@@ -1,0 +1,124 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Lifeflow",
+    "version": "0.0.1",
+    "description": "Server-to-browser notifications for Lifeflow.\n\nThere is no login. The server writes JSON to every open socket; the browser never writes application frames. Use REST for client-to-server traffic."
+  },
+  "servers": {
+    "local": {
+      "host": "localhost:8083",
+      "protocol": "ws",
+      "pathname": "/api/ws",
+      "description": "Development server. Dial `ws://localhost:8083/api/ws` (use `wss` if the page is HTTPS). Unauthenticated."
+    }
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "notifications": {
+      "address": "/",
+      "messages": {
+        "notification": {
+          "$ref": "#/components/messages/notification"
+        }
+      },
+      "title": "Notifications",
+      "description": "The WebSocket itself. Path is on the server (`/api/ws`); address is `/` because this protocol has no topics.",
+      "bindings": {
+        "ws": {
+          "method": "GET",
+          "bindingVersion": "0.1.0"
+        }
+      }
+    }
+  },
+  "operations": {
+    "sendNotification": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/notifications"
+      },
+      "title": "Send notification",
+      "summary": "Push a toast to every connected browser.",
+      "description": "Lifeflow broadcasts the payload on all sockets for this channel. Browsers listen; they do not send.",
+      "messages": [
+        {
+          "$ref": "#/channels/notifications/messages/notification"
+        }
+      ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "Notification": {
+        "description": "A single toast.",
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/NotificationLevel"
+          },
+          "persistent": {
+            "description": "If true, stay until the user dismisses the toast.",
+            "type": "boolean",
+            "default": false
+          },
+          "title": {
+            "description": "Headline. Required.",
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "description": "Optional extra line.",
+            "type": "string"
+          },
+          "duration": {
+            "description": "Auto-dismiss after this many milliseconds. Ignored if `persistent`. `0` means the client default.",
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "examples": [
+          {
+            "level": "error",
+            "title": "Job failed",
+            "message": "exit 1",
+            "persistent": true
+          },
+          {
+            "level": "success",
+            "title": "Done",
+            "duration": 4000
+          },
+          {
+            "level": "success",
+            "title": "Saved"
+          }
+        ]
+      },
+      "NotificationLevel": {
+        "description": "Toast color.",
+        "type": "string",
+        "enum": [
+          "info",
+          "success",
+          "error"
+        ]
+      }
+    },
+    "messages": {
+      "notification": {
+        "payload": {
+          "$ref": "#/components/schemas/Notification"
+        },
+        "contentType": "application/json",
+        "name": "notification",
+        "title": "Notification",
+        "summary": "One toast, server to browser."
+      }
+    }
+  }
+}
