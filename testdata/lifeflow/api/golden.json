@@ -72,7 +72,8 @@
           },
           "message": {
             "description": "Optional extra line.",
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "duration": {
             "description": "Auto-dismiss after this many milliseconds. Ignored if `persistent`. `0` means the client default.",
