@@ -12,7 +12,7 @@ func channel(d *asyncapi.Document, c *asyncapi.Channel) error {
 
 	for name, m := range c.Messages.ByIndex() {
 		if err := messageRef(d, m, name); err != nil {
-			return &errpath.ErrKey{Key: name, Err: err}
+			return &errpath.ErrField{Field: "messages", Err: &errpath.ErrKey{Key: name, Err: err}}
 		}
 	}
 
