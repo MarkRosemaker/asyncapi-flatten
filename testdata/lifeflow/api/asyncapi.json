@@ -39,6 +39,7 @@
               "level": {
                 "type": "string",
                 "enum": ["info", "success", "error"],
+                "default": "info",
                 "description": "Toast color."
               },
               "persistent": {
@@ -53,12 +54,14 @@
               },
               "message": {
                 "type": "string",
-                "description": "Optional extra line."
+                "description": "Optional extra line.",
+                "default": ""
               },
               "duration": {
+                "description": "Auto-dismiss after this many milliseconds. Ignored if `persistent`. `0` means the client default.",
                 "type": "integer",
                 "minimum": 0,
-                "description": "Auto-dismiss after this many milliseconds. Ignored if `persistent`. `0` means the client default."
+                "default": 0
               }
             },
             "examples": [
