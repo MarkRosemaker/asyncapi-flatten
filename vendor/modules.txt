@@ -7,7 +7,7 @@ github.com/MarkRosemaker/asyncapi
 # github.com/MarkRosemaker/errpath v0.0.0-20261004011213-d39d7f96c8f4
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/fsutil v0.0.0-20261004011212-542873237c74
+# github.com/MarkRosemaker/fsutil v0.0.0-20261009160532-d0e962affdd3
 ## explicit; go 1.26.3
 github.com/MarkRosemaker/fsutil
 github.com/MarkRosemaker/fsutil/osutil
@@ -40,7 +40,7 @@ github.com/spf13/afero/mem
 # golang.org/x/exp v0.0.0-20261007192929-f45ad48fbe92
 ## explicit; go 1.26.0
 golang.org/x/exp/maps
-# golang.org/x/text v0.42.0
+# golang.org/x/text v0.43.0
 ## explicit; go 1.26.0
 golang.org/x/text/runes
 golang.org/x/text/transform
