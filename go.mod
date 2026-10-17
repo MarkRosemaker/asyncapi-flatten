@@ -3,7 +3,7 @@ module github.com/MarkRosemaker/asyncapi-flatten
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/asyncapi v0.0.0-20261016110438-f0a0049d61bf
+	github.com/MarkRosemaker/asyncapi v0.0.0-20261017144350-f3dd554cc09c
 	github.com/MarkRosemaker/errpath v0.0.0-20261016110315-f418d8a9c89d
 	github.com/MarkRosemaker/fsutil v0.0.0-20261016110315-c0d7fedd6a61
 	github.com/ettle/strcase v0.2.0
@@ -12,7 +12,7 @@ require (
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261016110315-5aef3717d3ec // indirect
-	github.com/MarkRosemaker/jsonutil v0.0.0-20261016110315-2570954341ab // indirect
+	github.com/MarkRosemaker/jsonutil v0.0.0-20261017142330-353b1d3d9a5c // indirect
 	github.com/MarkRosemaker/ordmap v0.0.0-20261016110346-7943cbe36691 // indirect
 	github.com/MarkRosemaker/yaml v0.0.0-20261016110357-e4eff9824664 // indirect
 	github.com/MarkRosemaker/yaml2json v0.0.0-20261016110315-3eaa144544e0 // indirect
