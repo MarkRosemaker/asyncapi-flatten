@@ -7,7 +7,7 @@ github.com/MarkRosemaker/asyncapi
 # github.com/MarkRosemaker/errpath v0.0.0-20261107140447-85db0425f9e7
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/fsutil v0.0.0-20261108182754-193a90981e4c
+# github.com/MarkRosemaker/fsutil v0.0.0-20261108191203-d1a4da16c40e
 ## explicit; go 1.26.3
 github.com/MarkRosemaker/fsutil
 github.com/MarkRosemaker/fsutil/osutil
