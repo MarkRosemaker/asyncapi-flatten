@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	github.com/MarkRosemaker/asyncapi v0.0.0-20261107140611-738eef4af669
 	github.com/MarkRosemaker/errpath v0.0.0-20261107140447-85db0425f9e7
-	github.com/MarkRosemaker/fsutil v0.0.0-20261107140445-abce33c94250
+	github.com/MarkRosemaker/fsutil v0.0.0-20261108182754-193a90981e4c
 	github.com/ettle/strcase v0.2.0
 )
 

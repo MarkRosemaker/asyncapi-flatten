@@ -56,7 +56,8 @@ if err := fsutil.Copy(afero.NewOsFs(), "api/openapi.json", "build/openapi.json")
 ```
 
 The copy creates any missing parent directories, preserves the source file's
-permissions on a best-effort basis, and syncs before returning.
+permissions on a best-effort basis, and syncs before returning. Copying a file
+onto itself, which would empty it, fails with `ErrSameFile` instead.
 
 In a test, the same call runs entirely in memory:
 

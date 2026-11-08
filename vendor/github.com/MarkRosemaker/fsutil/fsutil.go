@@ -2,14 +2,24 @@
 package fsutil
 
 import (
+	"errors"
+	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/afero"
 )
 
+// ErrSameFile is returned when the source and the destination of a copy are one file, which copying would empty.
+var ErrSameFile = errors.New("source and destination are the same file")
+
 // Copy copies a single file within the same filesystem.
 func Copy(fs afero.Fs, src, dst string) error {
+	if err := sameFile(fs, src, dst); err != nil {
+		return err
+	}
+
 	return copyFile(fs, fs, src, dst)
 }
 
@@ -41,4 +51,23 @@ func copyFile(srcFS, dstFS afero.Fs, src, dst string) error {
 	}
 
 	return dstFile.Sync()
+}
+
+// sameFile reports ErrSameFile where creating dst would truncate src before it is read.
+func sameFile(fs afero.Fs, src, dst string) error {
+	if filepath.Clean(src) == filepath.Clean(dst) {
+		return fmt.Errorf("copying %s to %s: %w", src, dst, ErrSameFile)
+	}
+
+	// The same file under another name, such as a hard link, on a filesystem that can tell.
+	srcInfo, err := fs.Stat(src)
+	if err != nil {
+		return nil //nolint:nilerr // opening src reports it
+	}
+
+	if dstInfo, err := fs.Stat(dst); err == nil && os.SameFile(srcInfo, dstInfo) {
+		return fmt.Errorf("copying %s to %s: %w", src, dst, ErrSameFile)
+	}
+
+	return nil
 }
