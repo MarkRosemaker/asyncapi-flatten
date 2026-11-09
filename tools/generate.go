@@ -15,17 +15,19 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run("testdata", "../asyncapi-enrich/testdata"); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
-	if err := copyPreviousStep(); err != nil {
+// run regenerates each fixture's golden.json under testdata, after copying in
+// the inputs recorded under enrichDir.
+func run(testdata, enrichDir string) error {
+	if err := copyPreviousStep(enrichDir, testdata); err != nil {
 		return err
 	}
 
-	entries, err := os.ReadDir("testdata")
+	entries, err := os.ReadDir(testdata)
 	if err != nil {
 		return err
 	}
@@ -35,7 +37,7 @@ func run() error {
 			continue
 		}
 
-		doc, err := asyncapi.LoadFromFile(filepath.Join("testdata", entry.Name(), "api", "asyncapi.json"))
+		doc, err := asyncapi.LoadFromFile(filepath.Join(testdata, entry.Name(), "api", "asyncapi.json"))
 		if err != nil {
 			return err
 		}
@@ -44,7 +46,7 @@ func run() error {
 			return err
 		}
 
-		if err := doc.WriteToFile(filepath.Join("testdata", entry.Name(), "api", "golden.json")); err != nil {
+		if err := doc.WriteToFile(filepath.Join(testdata, entry.Name(), "api", "golden.json")); err != nil {
 			return err
 		}
 	}
@@ -57,9 +59,7 @@ func run() error {
 // pairing asyncapi-codegen's tools/generate.go uses today, kept only until
 // asyncapi-codegen starts reading from this repository's own golden.json
 // instead (see docs/roadmap.md).
-func copyPreviousStep() error {
-	const srcDir = "../asyncapi-enrich/testdata"
-
+func copyPreviousStep(srcDir, testdata string) error {
 	entries, err := os.ReadDir(srcDir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -72,7 +72,7 @@ func copyPreviousStep() error {
 	for _, e := range entries {
 		if err := osutil.Copy(
 			filepath.Join(srcDir, e.Name(), "api", "golden.json"),
-			filepath.Join("testdata", e.Name(), "api", "asyncapi.json"),
+			filepath.Join(testdata, e.Name(), "api", "asyncapi.json"),
 		); err != nil {
 			return err
 		}
