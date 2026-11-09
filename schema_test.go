@@ -1,6 +1,8 @@
 package flatten_test
 
 import (
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -189,5 +191,91 @@ func TestFlatten_NameCollision(t *testing.T) {
 
 	if props := doc.Components.Schemas["Event"].Value.Schema.Properties; len(props) != 1 {
 		t.Errorf("expected the pre-existing Event component to be untouched, got %d properties", len(props))
+	}
+}
+
+func TestFlatten_PromotionRules(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		payload string
+		want    []string // component schema names after flattening, sorted
+	}{
+		{"integer stays inline", `{"type": "integer"}`, nil},
+		{"number stays inline", `{"type": "number"}`, nil},
+		{"boolean stays inline", `{"type": "boolean"}`, nil},
+		{"plain string stays inline", `{"type": "string", "format": "uuid"}`, nil},
+		{"string enum", `{"type": "string", "enum": ["a", "b"]}`, []string{"M"}},
+		{"object without properties stays inline", `{"type": "object"}`, nil},
+		{"object with properties", `{"type": "object", "properties": {"a": {"type": "string"}}}`, []string{"M"}},
+		{"bare properties", `{"properties": {"a": {"type": "string"}}}`, []string{"M"}},
+		{"oneOf", `{"oneOf": [{"type": "string"}, {"type": "integer"}]}`, []string{"M"}},
+		{"anyOf", `{"anyOf": [{"type": "string"}, {"type": "null"}]}`, []string{"M"}},
+		{"array of strings stays inline", `{"type": "array", "items": {"type": "string"}}`, nil},
+		{"array of integers stays inline", `{"type": "array", "items": {"type": "integer"}}`, nil},
+		{"array of string enums", `{"type": "array", "items": {"type": "string", "enum": ["a"]}}`, []string{"M", "MItem"}},
+		{"array of empty objects stays inline", `{"type": "array", "items": {"type": "object"}}`, nil},
+		{
+			"array of objects",
+			`{"type": "array", "items": {"type": "object", "properties": {"a": {"type": "string"}}}}`,
+			[]string{"M", "MItem"},
+		},
+		{"array of arrays stays inline", `{"type": "array", "items": {"type": "array", "items": {"type": "integer"}}}`, nil},
+		{
+			"array of raw-format items",
+			`{"type": "array", "items": {"schemaFormat": "application/vnd.apache.avro+json;version=1.9.0", "schema": {"type": "string"}}}`,
+			[]string{"M", "MItem"},
+		},
+		{
+			"nested objects named by path",
+			`{"type": "object", "properties": {"result": {"type": "object", "properties": {"status": {"type": "string", "enum": ["x"]}}}}}`,
+			[]string{"M", "MResult", "MResultStatus"},
+		},
+		{
+			"property names with slashes",
+			`{"type": "object", "properties": {"a/b": {"type": "string", "enum": ["x"]}}}`,
+			[]string{"M", "MAB"},
+		},
+		{
+			"additionalProperties",
+			`{"type": "object", "additionalProperties": {"type": "object", "properties": {"a": {"type": "string"}}}}`,
+			[]string{"MValue"},
+		},
+		{
+			"contentSchema of a string",
+			`{"type": "string", "contentEncoding": "base64", "contentSchema": {"type": "object", "properties": {"a": {"type": "string"}}}}`,
+			[]string{"MContent"},
+		},
+		{
+			"oneOf members stay inline but are recursed into",
+			`{"oneOf": [{"type": "object", "properties": {"k": {"type": "string", "enum": ["x"]}}}]}`,
+			[]string{"M", "MOneOf0K"},
+		},
+		{
+			"anyOf members stay inline but are recursed into",
+			`{"anyOf": [{"type": "string", "enum": ["x"]}, {"type": "array", "items": {"type": "object", "properties": {"a": {"type": "string"}}}}]}`,
+			[]string{"M", "MAnyOf1Item"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			doc := minimalDoc(t, tc.payload)
+
+			if err := flatten.Document(doc); err != nil {
+				t.Fatalf("Document: %v", err)
+			}
+
+			if err := doc.Validate(); err != nil {
+				t.Fatalf("produced invalid document: %v", err)
+			}
+
+			got := slices.Sorted(maps.Keys(doc.Components.Schemas))
+			if !slices.Equal(got, tc.want) {
+				t.Errorf("component schemas: got %q, want %q", got, tc.want)
+			}
+
+			payload := doc.Channels["c"].Value.Messages["m"].Value.Payload
+			if promoted := slices.Contains(tc.want, "M"); promoted != (payload.Ref != nil) {
+				t.Errorf("payload promoted = %v, want %v", payload.Ref != nil, promoted)
+			}
+		})
 	}
 }

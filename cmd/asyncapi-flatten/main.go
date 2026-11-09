@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/MarkRosemaker/asyncapi"
@@ -11,18 +13,39 @@ import (
 )
 
 func main() {
-	if err := run(context.Background()); err != nil {
-		fmt.Fprintf(os.Stderr, "asyncapi-flatten: %v\n", err)
-		flag.Usage()
+	if err := run(context.Background(), os.Args[1:], os.Stderr); err != nil {
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context) error {
-	var specPath string
-	flag.StringVar(&specPath, "spec", "api/asyncapi.json", "path to AsyncAPI spec file")
-	flag.Parse()
+// run reports its own errors to stderr; the error it returns only sets the exit code.
+func run(_ context.Context, args []string, stderr io.Writer) error {
+	fs := flag.NewFlagSet("asyncapi-flatten", flag.ContinueOnError)
+	fs.SetOutput(stderr)
 
+	var specPath string
+	fs.StringVar(&specPath, "spec", "api/asyncapi.json", "path to AsyncAPI spec file")
+
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+
+		return err // Parse has already printed the error and usage
+	}
+
+	if err := flattenFile(specPath); err != nil {
+		_, _ = fmt.Fprintf(stderr, "asyncapi-flatten: %v\n", err)
+
+		fs.Usage()
+
+		return err
+	}
+
+	return nil
+}
+
+func flattenFile(specPath string) error {
 	doc, err := asyncapi.LoadFromFile(specPath)
 	if err != nil {
 		return err
@@ -45,9 +68,5 @@ func run(ctx context.Context) error {
 		}
 	}
 
-	if err := doc.WriteToFile(specPath); err != nil {
-		return err
-	}
-
-	return nil
+	return doc.WriteToFile(specPath)
 }

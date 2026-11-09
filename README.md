@@ -47,6 +47,8 @@ assume every type it sees already has a name.
 go get -tool github.com/MarkRosemaker/asyncapi-flatten/cmd/asyncapi-flatten
 ```
 
+then `go tool asyncapi-flatten -spec api/asyncapi.json` flattens that spec (JSON or YAML; `api/asyncapi.json` is the default) in place, with its components sorted by name. If the spec was valid before, the result is validated too.
+
 or
 
 ```bash
